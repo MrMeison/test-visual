@@ -1,0 +1,24 @@
+{
+  "visual": {
+    "name": "test-visual",
+    "displayName": "Test Visual",
+    "guid": "PBI_CV_90CF7C04_2D19_4DD1_8D69_A5FE218BE58B",
+    "visualClassName": "Visual",
+    "version": "0.0.1",
+    "description": "Test Visual",
+    "supportUrl": "https://github.com/MrMeison",
+    "gitHubUrl": "https://github.com/MrMeison"
+  },
+  "apiVersion": "1.5.0",
+  "author": {
+    "name": "Konstantin Mamaev",
+    "email": "meison@meison.net"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": [],
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": "dependencies.json"
+}

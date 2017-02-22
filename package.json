@@ -1,0 +1,23 @@
+{
+  "name": "test-visual",
+  "version": "0.0.1",
+  "description": "Simple test visual",
+  "main": "src/visual.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrMeison/test-visual.git"
+  },
+  "keywords": [
+    "powerbi",
+    "visual"
+  ],
+  "author": "Konstantin Mamaev",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MrMeison/test-visual/issues"
+  },
+  "homepage": "https://github.com/MrMeison/test-visual#readme"
+}
