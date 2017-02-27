@@ -25,29 +25,124 @@
  */
 
 module powerbi.extensibility.visual {
-    export class Visual implements IVisual {
-        private target: HTMLElement;
-        private updateCount: number;
 
-        constructor(options: VisualConstructorOptions) {
-            console.log('Visual constructor', options);
-        }
+    interface ICategory {
+        name: string;
+        value: number;
+    }
+
+    export class Visual implements IVisual {
+        private pieChart: SVGSVGElement;
+        private legendElement: HTMLElement;
+
+        private circleElement: SVGCircleElement;
 
         public init(options: VisualConstructorOptions) {
             let visual: HTMLElement = options.element[0];
-            this.updateCount = 0;
-            let counter = document.createElement("em");
-            counter.classList.add("counter");
-            let paragraph = document.createElement("p");
-            paragraph.appendChild(document.createTextNode("Update count:"));
-            paragraph.appendChild(counter);
-            visual.appendChild(paragraph);
-            this.target = counter;
+            this.initMarkup(visual);
         }
 
         public update(options: VisualUpdateOptions) {
-            console.log('Visual update', options);
-            this.target.innerHTML = (this.updateCount++).toString();
+            let categories: Array<ICategory> = this.visualTransform(options).sort((a, b) => b.value - a.value);
+            let sumValues = categories.reduce((prev, current) => prev + current.value, 0);
+            let prevAggregation = 0;
+            this.cleanElement(this.pieChart);
+            this.cleanElement(this.legendElement);
+            for (let i = 0; i > categories.length; i++) {
+                let value = categories[i].value + prevAggregation;
+
+                // Add 1 procent for last element for fixing round issues
+                if (i === categories.length - 1) {
+                    value += sumValues / 100;
+                }
+                this.pieChart.appendChild(this.createPieSection(categories[i].value, sumValues));
+                prevAggregation += value;
+
+                this.addChartLabel(categories[i].name, "black");
+            }
+        }
+
+        private createPieSection(value: number, sum: number) {
+            let circle = this.circleElement.cloneNode() as SVGCircleElement;
+            circle.setAttribute("stroke-dasharray", `${Math.round(value / sum)} 100`);
+            circle.setAttribute("fill", "black");
+            return circle;
+        }
+
+        // TODO: implement it  
+        private addChartLabel(label: string, color: string) {
+
+        }
+
+        private cleanElement(chart: Element) {
+            while (chart.firstChild) {
+                chart.firstChild.removeChild(chart.firstChild.firstChild);
+            }
+        }
+
+        private initMarkup(parent: HTMLElement) {
+            // <figure>
+            //     <figcaption>
+            //         Wheel of Fortune
+            //     </figcaption>
+            //     <div class="fortune-wheel__legend"></div>
+            //     <svg class="fortune-wheel__pie" viewBox="0 0 32 32">
+            //         // Place to pie chart
+            //     </svg>
+            //  <button class="fortune-wheel__button"></button>
+            // </figure>
+
+            const NS = "http://www.w3.org/2000/svg";
+            let figure = document.createElement("figure");
+            let figureCaption = document.createElement("figcaption");
+            figureCaption.appendChild(document.createTextNode("Wheel of Fortune"));
+
+            let legend = document.createElement("div");
+            legend.classList.add("fortune-wheel__legend");
+
+            let svg = document.createElementNS(NS, "svg");
+            svg.setAttribute("viewBox", "0 0 32 32");
+            svg.classList.add("fortune-wheel__pie");
+
+            let button = document.createElement("button");
+            button.classList.add("fortune-wheel__button");
+
+            figure.appendChild(figureCaption);
+            figure.appendChild(legend);
+            figure.appendChild(svg);
+            figure.appendChild(button);
+            parent.appendChild(figure);
+            this.pieChart = svg;
+
+            let circle = document.createElementNS(NS, "circle");
+            circle.setAttribute("r", "16");
+            circle.setAttribute("cx", "16");
+            circle.setAttribute("cy", "16");
+            this.circleElement = circle;
+            this.legendElement = legend;
+        }
+        private visualTransform(options: VisualUpdateOptions): Array<ICategory> {
+            let dataViews = options.dataViews;
+            let categories: Array<ICategory> = [];
+            if (!dataViews
+                || !dataViews[0]
+                || !dataViews[0].categorical
+                || !dataViews[0].categorical.categories
+                || !dataViews[0].categorical.categories[0].source
+                || !dataViews[0].categorical.values) {
+                return categories;
+            }
+            let categorical = dataViews[0].categorical;
+            let category = categorical.categories[0];
+            let dataValue = categorical.values[0];
+
+            for (let i = 0, len = Math.max(category.values.length, dataValue.values.length); i < len; i++) {
+                categories.push({
+                    name: category.values[i].toString(),
+                    value: dataValue.values[i] as number
+                });
+            }
+            return categories;
         }
     }
 }
