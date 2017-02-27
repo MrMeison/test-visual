@@ -33,5 +33,6 @@
       ],
       "url": "./.api/v1.5.0/schema.dependencies.json"
     }
-  ]
+],
+"vsicons.presets.angular": true
 }

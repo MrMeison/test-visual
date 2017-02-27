@@ -31,11 +31,27 @@ module powerbi.extensibility.visual {
         value: number;
     }
 
+    enum Direction {
+        LEFT,
+        RIGHT
+    }
+
+    const TEST_DATA: Array<ICategory> = [
+        { name: "Asia", value: 100 },
+        { name: "Europe", value: 236 },
+        { name: "Africa", value: 54 },
+        { name: "America", value: 321 }
+    ]
+
+    const MAX_ROTATE: number = 720;
+
     export class Visual implements IVisual {
         private pieChart: SVGSVGElement;
         private legendElement: HTMLElement;
 
         private circleElement: SVGCircleElement;
+        private direction: Direction = Direction.LEFT;
+        constructor(options: VisualConstructorOptions) { }
 
         public init(options: VisualConstructorOptions) {
             let visual: HTMLElement = options.element[0];
@@ -49,38 +65,50 @@ module powerbi.extensibility.visual {
             this.cleanElement(this.pieChart);
             this.cleanElement(this.legendElement);
             for (let i = 0; i > categories.length; i++) {
+                let color = this.getRandomColor();
                 let value = categories[i].value + prevAggregation;
 
                 // Add 1 procent for last element for fixing round issues
                 if (i === categories.length - 1) {
                     value += sumValues / 100;
                 }
-                this.pieChart.appendChild(this.createPieSection(categories[i].value, sumValues));
-                prevAggregation += value;
+                this.pieChart.appendChild(this.createPieSection(categories[i].value, sumValues, color));
 
-                this.addChartLabel(categories[i].name, "black");
+                let label = this.addChartLabel(categories[i].name, color);
+                this.legendElement.appendChild(label);
+                prevAggregation += value;
             }
         }
 
-        private createPieSection(value: number, sum: number) {
+        private createPieSection(value: number, sum: number, color: string) {
             let circle = this.circleElement.cloneNode() as SVGCircleElement;
             circle.setAttribute("stroke-dasharray", `${Math.round(value / sum)} 100`);
-            circle.setAttribute("fill", "black");
+            circle.setAttribute("fill", color);
             return circle;
         }
 
-        // TODO: implement it  
-        private addChartLabel(label: string, color: string) {
+        private addChartLabel(label: string, color: string): HTMLElement {
+            let legendBlock = document.createElement("span");
+            let labelElement = document.createElement("label");
+            labelElement.appendChild(document.createTextNode(label));
 
+            let colorElement = document.createElement("span");
+            colorElement.appendChild(document.createTextNode(" "));
+            colorElement.style.color = color;
+
+            legendBlock.appendChild(colorElement);
+            legendBlock.appendChild(labelElement);
+
+            return legendBlock;
         }
 
-        private cleanElement(chart: Element) {
+        private cleanElement(chart: Element): void {
             while (chart.firstChild) {
                 chart.firstChild.removeChild(chart.firstChild.firstChild);
             }
         }
 
-        private initMarkup(parent: HTMLElement) {
+        private initMarkup(parent: HTMLElement): void {
             // <figure>
             //     <figcaption>
             //         Wheel of Fortune
@@ -105,7 +133,9 @@ module powerbi.extensibility.visual {
             svg.classList.add("fortune-wheel__pie");
 
             let button = document.createElement("button");
+            button.appendChild(document.createTextNode("Spin"));
             button.classList.add("fortune-wheel__button");
+            button.addEventListener("click", this.spin);
 
             figure.appendChild(figureCaption);
             figure.appendChild(legend);
@@ -121,6 +151,13 @@ module powerbi.extensibility.visual {
             this.circleElement = circle;
             this.legendElement = legend;
         }
+
+        private spin(): void {
+            let randomRotate = Math.floor(Math.random() * MAX_ROTATE);
+            randomRotate = this.direction === Direction.RIGHT ? -1 * randomRotate : randomRotate;
+            this.pieChart.style.transform = `rotate(${randomRotate})`;
+        }
+
         private visualTransform(options: VisualUpdateOptions): Array<ICategory> {
             let dataViews = options.dataViews;
             let categories: Array<ICategory> = [];
@@ -143,6 +180,15 @@ module powerbi.extensibility.visual {
                 });
             }
             return categories;
+        }
+
+        private getRandomColor(): string {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
         }
     }
 }
