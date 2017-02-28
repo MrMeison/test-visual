@@ -36,12 +36,12 @@ module powerbi.extensibility.visual {
         RIGHT
     }
 
-    const TEST_DATA: Array<ICategory> = [
-        { name: "Asia", value: 100 },
-        { name: "Europe", value: 236 },
-        { name: "Africa", value: 54 },
-        { name: "America", value: 321 }
-    ]
+    // const TEST_DATA: Array<ICategory> = [
+    //     { name: "Asia", value: 100 },
+    //     { name: "Europe", value: 236 },
+    //     { name: "Africa", value: 54 },
+    //     { name: "America", value: 321 }
+    // ]
 
     const MAX_ROTATE: number = 720;
 
@@ -51,50 +51,60 @@ module powerbi.extensibility.visual {
 
         private circleElement: SVGCircleElement;
         private direction: Direction = Direction.LEFT;
-        constructor(options: VisualConstructorOptions) { }
+        constructor(options: VisualConstructorOptions) {
+            this.init(options);
+         }
 
         public init(options: VisualConstructorOptions) {
-            let visual: HTMLElement = options.element[0];
+            let visual: HTMLElement = options.element;
             this.initMarkup(visual);
         }
 
         public update(options: VisualUpdateOptions) {
             let categories: Array<ICategory> = this.visualTransform(options).sort((a, b) => b.value - a.value);
+            // let categories: Array<ICategory> = TEST_DATA;
             let sumValues = categories.reduce((prev, current) => prev + current.value, 0);
-            let prevAggregation = 0;
+            let aggregation = sumValues;
             this.cleanElement(this.pieChart);
             this.cleanElement(this.legendElement);
-            for (let i = 0; i > categories.length; i++) {
-                let color = this.getRandomColor();
-                let value = categories[i].value + prevAggregation;
 
-                // Add 1 procent for last element for fixing round issues
-                if (i === categories.length - 1) {
+            let counter = 0;
+            while (aggregation !== 0) {
+
+                let color = this.getRandomColor();
+                let value = aggregation;
+
+                // Add 1 procent for first element for fixing round issues
+                if (counter === 0) {
                     value += sumValues / 100;
                 }
-                this.pieChart.appendChild(this.createPieSection(categories[i].value, sumValues, color));
+                this.pieChart.appendChild(this.createPieSection(value, sumValues, color));
 
-                let label = this.addChartLabel(categories[i].name, color);
+                let label = this.addChartLabel(categories[counter].name, color);
                 this.legendElement.appendChild(label);
-                prevAggregation += value;
+                aggregation -= categories[counter].value;
+                counter++;
             }
         }
 
         private createPieSection(value: number, sum: number, color: string) {
             let circle = this.circleElement.cloneNode() as SVGCircleElement;
-            circle.setAttribute("stroke-dasharray", `${Math.round(value / sum)} 100`);
-            circle.setAttribute("fill", color);
+            circle.setAttribute("stroke-dasharray", `${Math.round((value / sum) * 100)} 100`);
+            circle.setAttribute("stroke", color);
             return circle;
         }
 
         private addChartLabel(label: string, color: string): HTMLElement {
             let legendBlock = document.createElement("span");
+            legendBlock.classList.add("fortune-wheel__item");
             let labelElement = document.createElement("label");
+            labelElement.classList.add("fortune-wheel__legend-label");
             labelElement.appendChild(document.createTextNode(label));
 
             let colorElement = document.createElement("span");
+            colorElement.classList.add("fortune-wheel__legend-indicator");
             colorElement.appendChild(document.createTextNode(" "));
-            colorElement.style.color = color;
+            colorElement.style.backgroundColor = color;
 
             legendBlock.appendChild(colorElement);
             legendBlock.appendChild(labelElement);
@@ -104,12 +114,12 @@ module powerbi.extensibility.visual {
 
         private cleanElement(chart: Element): void {
             while (chart.firstChild) {
-                chart.firstChild.removeChild(chart.firstChild.firstChild);
+                chart.removeChild(chart.firstChild);
             }
         }
 
         private initMarkup(parent: HTMLElement): void {
-            // <figure>
+            // <figure class="fortune-wheel">
             //     <figcaption>
             //         Wheel of Fortune
             //     </figcaption>
@@ -122,6 +132,7 @@ module powerbi.extensibility.visual {
 
             const NS = "http://www.w3.org/2000/svg";
             let figure = document.createElement("figure");
+            figure.classList.add("fortune-wheel");
             let figureCaption = document.createElement("figcaption");
             figureCaption.appendChild(document.createTextNode("Wheel of Fortune"));
 
@@ -130,16 +141,18 @@ module powerbi.extensibility.visual {
 
             let svg = document.createElementNS(NS, "svg");
             svg.setAttribute("viewBox", "0 0 32 32");
+            svg.style.borderRadius = "50%";
             svg.classList.add("fortune-wheel__pie");
 
             let button = document.createElement("button");
             button.appendChild(document.createTextNode("Spin"));
             button.classList.add("fortune-wheel__button");
-            button.addEventListener("click", this.spin);
+            button.addEventListener("click", () => {this.spin()});
 
             figure.appendChild(figureCaption);
             figure.appendChild(legend);
             figure.appendChild(svg);
+            figure.appendChild(document.createElement("br"));
             figure.appendChild(button);
             parent.appendChild(figure);
             this.pieChart = svg;
@@ -148,14 +161,15 @@ module powerbi.extensibility.visual {
             circle.setAttribute("r", "16");
             circle.setAttribute("cx", "16");
             circle.setAttribute("cy", "16");
+            circle.setAttribute("stroke-width", "32");
+            circle.setAttribute("fill", "none");
             this.circleElement = circle;
             this.legendElement = legend;
         }
-
         private spin(): void {
             let randomRotate = Math.floor(Math.random() * MAX_ROTATE);
             randomRotate = this.direction === Direction.RIGHT ? -1 * randomRotate : randomRotate;
-            this.pieChart.style.transform = `rotate(${randomRotate})`;
+            this.pieChart.style.transform = `rotate(${randomRotate}deg)`;
         }
 
         private visualTransform(options: VisualUpdateOptions): Array<ICategory> {
