@@ -61,7 +61,10 @@ module powerbi.extensibility.visual {
         }
 
         public update(options: VisualUpdateOptions) {
-            let categories: Array<ICategory> = this.visualTransform(options).sort((a, b) => b.value - a.value);
+            if ( options.type !== VisualUpdateType.Data) {
+                return;
+            }
+            let categories: Array<ICategory> = this.visualTransform(options);
             // let categories: Array<ICategory> = TEST_DATA;
             let sumValues = categories.reduce((prev, current) => prev + current.value, 0);
             let aggregation = sumValues;
@@ -170,6 +173,7 @@ module powerbi.extensibility.visual {
             let randomRotate = Math.floor(Math.random() * MAX_ROTATE);
             randomRotate = this.direction === Direction.RIGHT ? -1 * randomRotate : randomRotate;
             this.pieChart.style.transform = `rotate(${randomRotate}deg)`;
+            debugger;
         }
 
         private visualTransform(options: VisualUpdateOptions): Array<ICategory> {
